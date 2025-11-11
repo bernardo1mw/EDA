@@ -1,0 +1,77 @@
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="mb-8 flex justify-between items-center">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">
+        Pedidos
+      </h1>
+      <p class="mt-2 text-gray-600 dark:text-gray-400">
+        Todos os pedidos agrupados por cliente
+      </p>
+    </div>
+    <button mat-raised-button color="primary" (click)="openOrderModal()">
+      Novo Pedido
+    </button>
+  </div>
+
+  @if (isLoading()) {
+    <div class="flex justify-center items-center py-12">
+      <mat-spinner diameter="48"></mat-spinner>
+    </div>
+  } @else if (error()) {
+    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+      <p class="text-red-800 dark:text-red-200">
+        {{ error() }}
+      </p>
+      <button mat-button color="primary" (click)="loadData()" class="mt-4">
+        Tentar Novamente
+      </button>
+    </div>
+  } @else if (ordersByCustomerKeys().length === 0) {
+    <div class="text-center py-12">
+      <p class="text-gray-500 dark:text-gray-400 text-lg mb-4">
+        Nenhum pedido encontrado.
+      </p>
+      <button mat-raised-button color="primary" (click)="openOrderModal()">
+        Criar Primeiro Pedido
+      </button>
+    </div>
+  } @else {
+    <div class="space-y-8">
+      @for (entry of ordersByCustomerEntries(); track entry[0]) {
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div class="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              @if (entry[1].customer) {
+                {{ entry[1].customer.name }}
+                <span class="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
+                  ({{ entry[1].customer.email }})
+                </span>
+              } @else {
+                <span class="text-gray-500 dark:text-gray-400">
+                  Cliente ID: {{ entry[0].substring(0, 8) }}...
+                </span>
+              }
+            </h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              {{ entry[1].orders.length }} {{ entry[1].orders.length === 1 ? 'pedido' : 'pedidos' }}
+            </p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            @for (order of entry[1].orders; track order.id) {
+              <app-order-card 
+                [order]="order" 
+                (paymentSuccess)="handlePaymentSuccess()"
+              ></app-order-card>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <app-order-modal
+    [isOpen]="isOrderModalOpen"
+    (close)="closeOrderModal()"
+    (success)="handleOrderCreated()"
+  ></app-order-modal>
+</div>

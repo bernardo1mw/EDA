@@ -1,0 +1,258 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: order_process_postgres
+    env_file:
+      - ./config/postgres.env
+    command: >
+      postgres
+        -c max_connections=400
+        -c shared_buffers=512MB
+        -c effective_cache_size=2GB
+        -c work_mem=32MB
+        -c maintenance_work_mem=256MB
+        -c wal_buffers=16MB
+        -c checkpoint_completion_target=0.9
+        -c max_wal_size=2GB
+        -c min_wal_size=1GB
+        -c checkpoint_timeout=15min
+        -c random_page_cost=1.1
+        -c commit_delay=100
+        -c commit_siblings=10
+        -c max_locks_per_transaction=256
+        -c max_pred_locks_per_transaction=256
+        -c bgwriter_delay=200ms
+        -c bgwriter_lru_maxpages=100
+        -c bgwriter_lru_multiplier=2.0
+        -c effective_io_concurrency=200
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U order_user -d order_process"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for Idempotency
+  redis:
+    image: redis:7-alpine
+    container_name: order_process_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: order_process_rabbitmq
+    env_file:
+      - ./config/rabbitmq.env
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./scripts/init-rabbitmq.sh:/docker-entrypoint-initdb.d/init-rabbitmq.sh
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: order_process_elasticsearch
+    env_file:
+      - ./config/elasticsearch.env
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Logstash
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: order_process_logstash
+    ports:
+      - "5044:5044"
+      - "9600:9600"
+    volumes:
+      - ./config/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml
+      - ./config/logstash/pipeline.conf:/usr/share/logstash/pipeline/logstash.conf
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9600/_node/stats || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Kibana
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: order_process_kibana
+    env_file:
+      - ./config/kibana.env
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Metricbeat
+  metricbeat:
+    image: docker.elastic.co/beats/metricbeat:8.11.0
+    container_name: order_process_metricbeat
+    user: root
+    volumes:
+      - ./config/metricbeat/metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
+      - /proc:/hostfs/proc:ro
+      - /:/hostfs:ro
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    command: metricbeat -e -system.hostfs=/hostfs
+
+  # Filebeat - coleta de logs dos containers Docker
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.11.0
+    container_name: order_process_filebeat
+    user: root
+    volumes:
+      - ./config/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      logstash:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "filebeat test output"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Orders API Service (Python + FastAPI) - Main API
+  orders-api:
+    build: ./services/orders-api-python
+    container_name: order_process_orders_api
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./services/orders-api-python/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Outbox Dispatcher Service
+  outbox-dispatcher:
+    build: ./services/outbox-dispatcher
+    container_name: order_process_outbox_dispatcher
+    env_file:
+      - ./services/outbox-dispatcher/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Payment Service (NestJS)
+  payment-service:
+    build: ./services/payment-service-nestjs
+    container_name: order_process_payment_service
+    ports:
+      - "3001:3001"
+    env_file:
+      - ./services/payment-service-nestjs/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Inventory Service
+  inventory-service:
+    build: ./services/inventory-service
+    container_name: order_process_inventory_service
+    env_file:
+      - ./services/inventory-service/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Aggregator Service - Metrics and KPIs
+  aggregator-service:
+    build: ./services/aggregator-service
+    container_name: order_process_aggregator_service
+    ports:
+      - "8081:8081"
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=order_process
+      - POSTGRES_USER=order_user
+      - POSTGRES_PASSWORD=order_password
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=order_user
+      - RABBITMQ_PASSWORD=order_password
+      - PORT=8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  elasticsearch_data:
+

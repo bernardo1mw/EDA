@@ -1,0 +1,35 @@
+filebeat.inputs:
+  - type: filestream
+    id: docker-logs
+    enabled: true
+    paths:
+      - /var/lib/docker/containers/*/*.log
+    parsers:
+      - ndjson:
+          keys_under_root: true
+          add_error_key: true
+          message_key: log
+    processors:
+      - add_docker_metadata:
+          host: "unix:///var/run/docker.sock"
+      - add_host_metadata: ~
+      # Decode the Docker log field which contains the app JSON log
+      - decode_json_fields:
+          fields: ["message", "log"]
+          process_array: true
+          max_depth: 5
+          target: ""
+          overwrite_keys: true
+
+output.logstash:
+  hosts: ["logstash:5044"]
+
+setup.template.enabled: true
+setup.ilm.enabled: auto
+
+logging.json: true
+logging.metrics.enabled: false
+
+
+
+

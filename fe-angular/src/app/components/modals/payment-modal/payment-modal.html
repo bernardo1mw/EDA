@@ -1,0 +1,51 @@
+@if (isOpen()) {
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full mx-4 p-6">
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Pagar com Stripe</h2>
+
+      @if (error()) {
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
+          <p class="text-red-800 dark:text-red-200 text-sm">{{ error() }}</p>
+        </div>
+      }
+
+      @if (isLoading()) {
+        <div class="text-center py-8">
+          <mat-spinner diameter="32"></mat-spinner>
+          <p class="text-gray-500 dark:text-gray-400 mt-2 text-sm">
+            Preparando pagamento...
+          </p>
+        </div>
+      } @else if (clientSecret()) {
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+          <p class="text-sm text-blue-800 dark:text-blue-200">
+            <strong>Pedido:</strong> #{{ order.id.substring(0, 8) }}
+          </p>
+          <p class="text-sm text-blue-800 dark:text-blue-200 mt-1">
+            <strong>Total:</strong> {{ order.total_amount | currency:'BRL' }}
+          </p>
+        </div>
+
+        <div class="border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-800 mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Dados do Cartão
+          </label>
+          <div id="card-element" class="p-2"></div>
+        </div>
+
+        <div class="flex gap-3 pt-4">
+          <button mat-raised-button color="primary" type="button" (click)="onClose()">
+            Cancelar
+          </button>
+          <button mat-raised-button color="primary" type="button" disabled>
+            Pagar
+          </button>
+        </div>
+      }
+
+      <div class="mt-4">
+        <button mat-button type="button" (click)="onClose()">Fechar</button>
+      </div>
+    </div>
+  </div>
+}
