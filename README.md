@@ -4,27 +4,27 @@ Event-driven microservices system to demonstrate resilient, observable, and high
 
 ## 🏗️ Architecture
 
-- **Microservices**: Orders API, Payment Service, Inventory Service, Notification Service, Aggregator Service
+- **Microservices**: Orders API (Python/FastAPI), Payment Service (NestJS), Inventory Service, Outbox Dispatcher, Aggregator Service
+- **Frontends**: Next.js (fe-next), Angular (fe-angular)
 - **Message Broker**: RabbitMQ with Dead Letter Queues and automatic retry
 - **Storage**: PostgreSQL with Transactional Outbox Pattern
 - **Cache**: Redis for idempotency control
-- **Observability**: Elastic Stack (ELK) + OpenTelemetry
+- **Observability**: Elastic Stack (ELK) + Filebeat + Metricbeat
 - **Testing**: k6 for load testing
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Docker and Docker Compose
-- Node.js 18+ (for development)
-- Go 1.21+ (for services)
+- Node.js 18+ (for frontend and NestJS services)
+- Python 3.11+ (for Orders API)
+- Go 1.21+ (for Go services)
 
 ### Running the System
 
 1. **Clone and configure the environment:**
 ```bash
-git clone <repository>
-cd order_process
-cp .env.example .env
+# Quick setup: copy .env.example files from config/ and services/ directories
 ```
 
 2. **Start the infrastructure:**
@@ -45,6 +45,15 @@ open http://localhost:5601
 
 # Elasticsearch
 curl http://localhost:9200/_cluster/health
+
+# Orders API
+curl http://localhost:8080/health/
+
+# Payment Service
+curl http://localhost:3001/health
+
+# Aggregator Service (Metrics)
+curl http://localhost:8081/health
 ```
 
 ## 📊 Performance Metrics
@@ -90,16 +99,18 @@ docker-compose stop payment-service
 order_process/
 ├── docs/                    # Documentation (PRD, ADRs)
 ├── services/               # Microservices
-│   ├── orders-api/         # Orders API
-│   ├── outbox-dispatcher/  # Event dispatcher
-│   ├── payment-service/    # Payment service
-│   ├── inventory-service/  # Inventory service
-│   ├── notification-service/ # Notification service
-│   └── aggregator-service/ # Aggregator service
+│   ├── orders-api-python/  # Orders API (Python/FastAPI)
+│   ├── payment-service-nestjs/ # Payment Service (NestJS)
+│   ├── inventory-service/  # Inventory Service (Go)
+│   ├── outbox-dispatcher/  # Event Dispatcher (Go)
+│   └── aggregator-service/ # Aggregator Service (Go)
+├── fe-next/               # Frontend (Next.js/React)
+├── fe-angular/            # Frontend (Angular)
 ├── tests/                  # Tests
 │   └── k6/                # Load tests
 ├── config/                 # Configuration
 │   ├── logstash/          # Log pipeline
+│   ├── filebeat/          # Log collection
 │   ├── metricbeat/        # System metrics
 │   └── kibana/            # Dashboards
 ├── scripts/               # Initialization scripts
@@ -108,6 +119,24 @@ order_process/
 ```
 
 ## 🔧 Development
+
+### Frontend Development
+
+#### Next.js Frontend (fe-next)
+```bash
+cd fe-next
+npm install
+npm run dev
+# Access at http://localhost:3000
+```
+
+#### Angular Frontend (fe-angular)
+```bash
+cd fe-angular
+npm install
+ng serve
+# Access at http://localhost:4200
+```
 
 ### Adding a New Service
 1. Create the directory in `services/`
@@ -151,6 +180,8 @@ docker-compose logs -f
 
 # Logs from specific service
 docker-compose logs -f orders-api
+docker-compose logs -f payment-service
+docker-compose logs -f aggregator-service
 
 # Service status
 docker-compose ps
@@ -164,11 +195,20 @@ docker-compose down -v
 
 ## 📚 Documentation
 
+### Architecture & Design
 - [PRD](docs/PRD.md) - Product Requirements Document
 - [ADR-01](docs/ADR-01.md) - Event-Driven Architecture
 - [ADR-02](docs/ADR-02.md) - Idempotency and DLQ
 - [ADR-03](docs/ADR-03.md) - Observability
 - [ADR-04](docs/ADR-04.md) - Load Testing
+- [Kibana Filters](docs/KIBANA_FILTERS.md) - Kibana dashboard filters
+
+### Setup & Configuration
+- [Environment Setup](ENV_SETUP.md) - Complete guide for environment variables
+
+### Service-Specific
+- [Orders API](services/orders-api-python/README.md) - Python/FastAPI service documentation
+- [Payment Service](services/payment-service-nestjs/README.md) - NestJS service documentation
 
 ## 🤝 Contributing
 
