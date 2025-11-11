@@ -1,38 +1,38 @@
 # Event Stream Orders
 
-Sistema de microsserviços orientado a eventos para demonstrar arquitetura resiliente e observável com alta performance.
+Event-driven microservices system to demonstrate resilient, observable, and high-performance architecture.
 
-## 🏗️ Arquitetura
+## 🏗️ Architecture
 
-- **Microsserviços**: Orders API, Payment Service, Inventory Service, Notification Service, Aggregator Service
-- **Mensageria**: RabbitMQ com Dead Letter Queues e retry automático
-- **Storage**: PostgreSQL com Transactional Outbox Pattern
-- **Cache**: Redis para controle de idempotência
-- **Observabilidade**: Elastic Stack (ELK) + OpenTelemetry
-- **Testes**: k6 para testes de carga
+- **Microservices**: Orders API, Payment Service, Inventory Service, Notification Service, Aggregator Service
+- **Message Broker**: RabbitMQ with Dead Letter Queues and automatic retry
+- **Storage**: PostgreSQL with Transactional Outbox Pattern
+- **Cache**: Redis for idempotency control
+- **Observability**: Elastic Stack (ELK) + OpenTelemetry
+- **Testing**: k6 for load testing
 
-## 🚀 Início Rápido
+## 🚀 Quick Start
 
-### Pré-requisitos
-- Docker e Docker Compose
-- Node.js 18+ (para desenvolvimento)
-- Go 1.21+ (para serviços)
+### Prerequisites
+- Docker and Docker Compose
+- Node.js 18+ (for development)
+- Go 1.21+ (for services)
 
-### Executando o Sistema
+### Running the System
 
-1. **Clone e configure o ambiente:**
+1. **Clone and configure the environment:**
 ```bash
 git clone <repository>
 cd order_process
 cp .env.example .env
 ```
 
-2. **Inicie a infraestrutura:**
+2. **Start the infrastructure:**
 ```bash
 docker-compose up -d
 ```
 
-3. **Verifique os serviços:**
+3. **Verify the services:**
 ```bash
 # PostgreSQL
 docker-compose exec postgres psql -U order_user -d order_process -c "SELECT version();"
@@ -47,138 +47,138 @@ open http://localhost:5601
 curl http://localhost:9200/_cluster/health
 ```
 
-## 📊 Métricas de Performance
+## 📊 Performance Metrics
 
 - **Throughput**: ≥ 2000 req/s
-- **Latência P99**: ≤ 200ms
-- **Taxa de erro**: ≤ 0,1%
-- **DLQ**: ≤ 0,1%
-- **Tempo ponta-a-ponta**: ≤ 2s
+- **P99 Latency**: ≤ 200ms
+- **Error Rate**: ≤ 0.1%
+- **DLQ**: ≤ 0.1%
+- **End-to-end Time**: ≤ 2s
 
-## 🔍 Observabilidade
+## 🔍 Observability
 
-### Dashboards Kibana
-- Performance (latência, throughput)
-- Filas RabbitMQ (mensagens, acks, DLQ)
-- Traces distribuídos
-- Métricas de negócio
+### Kibana Dashboards
+- Performance (latency, throughput)
+- RabbitMQ Queues (messages, acks, DLQ)
+- Distributed traces
+- Business metrics
 
-### Logs Estruturados
-- JSON format com trace_id
-- Correlação entre serviços
-- Métricas de negócio
+### Structured Logs
+- JSON format with trace_id
+- Service correlation
+- Business metrics
 
-## 🧪 Testes
+## 🧪 Testing
 
-### Testes de Carga
+### Load Testing
 ```bash
-# Executar testes k6
+# Run k6 tests
 cd tests/k6
 k6 run load-test.js
 ```
 
-### Testes de Resiliência
+### Resilience Testing
 ```bash
-# Simular falha de serviço
+# Simulate service failure
 docker-compose stop payment-service
-# Verificar recuperação automática
+# Verify automatic recovery
 ```
 
-## 📁 Estrutura do Projeto
+## 📁 Project Structure
 
 ```
 order_process/
-├── docs/                    # Documentação (PRD, ADRs)
-├── services/               # Microsserviços
-│   ├── orders-api/         # API de pedidos
-│   ├── outbox-dispatcher/  # Dispatcher de eventos
-│   ├── payment-service/    # Serviço de pagamento
-│   ├── inventory-service/  # Serviço de estoque
-│   ├── notification-service/ # Serviço de notificação
-│   └── aggregator-service/ # Serviço de agregação
-├── tests/                  # Testes
-│   └── k6/                # Testes de carga
-├── config/                 # Configurações
-│   ├── logstash/          # Pipeline de logs
-│   ├── metricbeat/        # Métricas do sistema
+├── docs/                    # Documentation (PRD, ADRs)
+├── services/               # Microservices
+│   ├── orders-api/         # Orders API
+│   ├── outbox-dispatcher/  # Event dispatcher
+│   ├── payment-service/    # Payment service
+│   ├── inventory-service/  # Inventory service
+│   ├── notification-service/ # Notification service
+│   └── aggregator-service/ # Aggregator service
+├── tests/                  # Tests
+│   └── k6/                # Load tests
+├── config/                 # Configuration
+│   ├── logstash/          # Log pipeline
+│   ├── metricbeat/        # System metrics
 │   └── kibana/            # Dashboards
-├── scripts/               # Scripts de inicialização
-├── docker-compose.yml     # Orquestração de serviços
-└── README.md              # Este arquivo
+├── scripts/               # Initialization scripts
+├── docker-compose.yml     # Service orchestration
+└── README.md              # This file
 ```
 
-## 🔧 Desenvolvimento
+## 🔧 Development
 
-### Adicionando Novo Serviço
-1. Crie o diretório em `services/`
-2. Implemente seguindo o padrão estabelecido
-3. Adicione configuração no `docker-compose.yml`
-4. Configure observabilidade (logs, métricas, traces)
+### Adding a New Service
+1. Create the directory in `services/`
+2. Implement following the established pattern
+3. Add configuration to `docker-compose.yml`
+4. Configure observability (logs, metrics, traces)
 
-### Padrões de Código
+### Code Standards
 - Clean Architecture
-- Logs estruturados em JSON
-- Instrumentação OpenTelemetry
-- Testes unitários e de integração
-- Documentação de API
+- Structured JSON logs
+- OpenTelemetry instrumentation
+- Unit and integration tests
+- API documentation
 
-## 📈 Monitoramento
+## 📈 Monitoring
 
-### Métricas Importantes
-- **API**: latência, throughput, taxa de erro
-- **Filas**: mensagens prontas, acks, DLQ
-- **Database**: conexões, queries lentas
-- **Sistema**: CPU, memória, disco
+### Important Metrics
+- **API**: latency, throughput, error rate
+- **Queues**: ready messages, acks, DLQ
+- **Database**: connections, slow queries
+- **System**: CPU, memory, disk
 
-### Alertas
-- Latência P99 > 200ms
-- Taxa de erro > 0,1%
-- DLQ > 0,1%
-- Falha de serviço
+### Alerts
+- P99 Latency > 200ms
+- Error rate > 0.1%
+- DLQ > 0.1%
+- Service failure
 
 ## 🚨 Troubleshooting
 
-### Problemas Comuns
-1. **Serviço não inicia**: Verificar logs com `docker-compose logs <service>`
-2. **Performance baixa**: Verificar métricas no Kibana
-3. **Mensagens na DLQ**: Analisar logs de erro
-4. **Traces incompletos**: Verificar configuração OpenTelemetry
+### Common Issues
+1. **Service won't start**: Check logs with `docker-compose logs <service>`
+2. **Low performance**: Check metrics in Kibana
+3. **Messages in DLQ**: Analyze error logs
+4. **Incomplete traces**: Verify OpenTelemetry configuration
 
-### Comandos Úteis
+### Useful Commands
 ```bash
-# Logs de todos os serviços
+# Logs from all services
 docker-compose logs -f
 
-# Logs de serviço específico
+# Logs from specific service
 docker-compose logs -f orders-api
 
-# Status dos serviços
+# Service status
 docker-compose ps
 
-# Reiniciar serviço
+# Restart service
 docker-compose restart <service>
 
-# Limpar volumes
+# Clean volumes
 docker-compose down -v
 ```
 
-## 📚 Documentação
+## 📚 Documentation
 
 - [PRD](docs/PRD.md) - Product Requirements Document
-- [ADR-01](docs/ADR-01.md) - Arquitetura Orientada a Eventos
-- [ADR-02](docs/ADR-02.md) - Idempotência e DLQ
-- [ADR-03](docs/ADR-03.md) - Observabilidade
-- [ADR-04](docs/ADR-04.md) - Testes de Carga
+- [ADR-01](docs/ADR-01.md) - Event-Driven Architecture
+- [ADR-02](docs/ADR-02.md) - Idempotency and DLQ
+- [ADR-03](docs/ADR-03.md) - Observability
+- [ADR-04](docs/ADR-04.md) - Load Testing
 
-## 🤝 Contribuição
+## 🤝 Contributing
 
-1. Fork o projeto
-2. Crie uma branch para sua feature
-3. Commit suas mudanças
-4. Push para a branch
-5. Abra um Pull Request
+1. Fork the project
+2. Create a branch for your feature
+3. Commit your changes
+4. Push to the branch
+5. Open a Pull Request
 
-## 📄 Licença
+## 📄 License
 
-Este projeto é licenciado sob a MIT License.
+This project is licensed under the MIT License.
 
