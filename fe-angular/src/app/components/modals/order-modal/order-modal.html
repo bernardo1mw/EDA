@@ -1,7 +1,7 @@
 @if (isOpen()) {
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 p-6">
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Criar Novo Pedido</h2>
+    <div role="dialog" aria-modal="true" aria-labelledby="order-modal-title" class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 p-6">
+      <h2 id="order-modal-title" class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Criar Novo Pedido</h2>
 
       @if (error()) {
         <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
@@ -12,7 +12,7 @@
       <form (ngSubmit)="onSubmit()" class="space-y-4">
         <mat-form-field class="w-full">
           <mat-label>Cliente</mat-label>
-          <mat-select [(ngModel)]="formData.customer_id" name="customer_id" required>
+          <mat-select [(ngModel)]="formData.customer_id" name="customer_id" required (ngModelChange)="clearError('customer_id')">
             @for (customer of customers(); track customer.id) {
               <mat-option [value]="customer.id">
                 {{ customer.name }} ({{ customer.email }})
@@ -20,10 +20,13 @@
             }
           </mat-select>
         </mat-form-field>
+        @if (errors()['customer_id']) {
+          <p class="text-sm text-red-500 mt-1">{{ errors()['customer_id'] }}</p>
+        }
 
         <mat-form-field class="w-full">
           <mat-label>Produto</mat-label>
-          <mat-select [(ngModel)]="formData.product_id" [(value)]="selectedProductId" name="product_id" (selectionChange)="updateTotal()" required>
+          <mat-select [(ngModel)]="formData.product_id" [(value)]="selectedProductId" name="product_id" (selectionChange)="updateTotal(); clearError('product_id')" required>
             @for (product of products(); track product.id) {
               <mat-option [value]="product.id">
                 {{ product.name }} - {{ product.price | currency:'BRL' }}
@@ -34,6 +37,9 @@
             }
           </mat-select>
         </mat-form-field>
+        @if (errors()['product_id']) {
+          <p class="text-sm text-red-500 mt-1">{{ errors()['product_id'] }}</p>
+        }
 
         @if (selectedProduct) {
           <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
@@ -50,8 +56,11 @@
 
         <mat-form-field class="w-full">
           <mat-label>Quantidade</mat-label>
-          <input matInput type="number" [(ngModel)]="formData.quantity" name="quantity" min="1" (ngModelChange)="updateTotal()" required>
+          <input matInput type="number" [(ngModel)]="formData.quantity" name="quantity" min="1" (ngModelChange)="updateTotal(); clearError('quantity')" [attr.aria-invalid]="!!errors()['quantity']" required>
         </mat-form-field>
+        @if (errors()['quantity']) {
+          <p class="text-sm text-red-500 mt-1">{{ errors()['quantity'] }}</p>
+        }
 
         <mat-form-field class="w-full">
           <mat-label>Total (R$)</mat-label>

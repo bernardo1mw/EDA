@@ -1,12 +1,9 @@
 export interface PaymentIntentResponse {
-  clientSecret: string;
-  paymentIntentId: string;
+  client_secret: string;
+  payment_intent_id: string;
 }
 
-export interface ConfirmPaymentRequest {
-  paymentIntentId: string;
-  paymentMethodId: string;
-  orderId: string;
-  returnUrl?: string;
+export interface ConfirmPaymentResponse {
+  status: string;
+  payment_intent_id: string;
 }
-

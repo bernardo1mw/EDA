@@ -1,4 +1,5 @@
 import { Component, Input, Output, EventEmitter, signal } from '@angular/core';
+import { formatCurrency, formatDate } from '../../../utils/format.util';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Order, OrderStatus } from '../../../models/order.model';
@@ -26,6 +27,8 @@ export class OrderCardComponent {
   isPaymentModalOpen = signal(false);
 
   readonly OrderStatus = OrderStatus;
+  readonly formatCurrency = formatCurrency;
+  readonly formatDate = formatDate;
 
   statusColors: Record<OrderStatus, string> = {
     [OrderStatus.PENDING]: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
@@ -34,23 +37,6 @@ export class OrderCardComponent {
     [OrderStatus.FAILED]: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
     [OrderStatus.CANCELLED]: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200',
   };
-
-  formatCurrency(value: number): string {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(value);
-  }
-
-  formatDate(date: string): string {
-    return new Date(date).toLocaleDateString('pt-BR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  }
 
   handlePaymentClick(event: Event) {
     event.preventDefault();

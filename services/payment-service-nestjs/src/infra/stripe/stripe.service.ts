@@ -3,9 +3,11 @@ import { ConfigType } from '@nestjs/config';
 import Stripe from 'stripe';
 import appConfig from '../../core/config';
 import { StructuredLogger } from '../../core/logging';
+import { IPaymentGateway } from '../../domain/contracts/payment-gateway.interface';
+import { PaymentStatus } from '../../domain/models/payment-status.enum';
 
 @Injectable()
-export class StripeService {
+export class StripeService implements IPaymentGateway {
   private readonly stripe: Stripe;
   private readonly logger = new StructuredLogger('StripeService');
 
@@ -145,21 +147,21 @@ export class StripeService {
    * @param stripeStatus Stripe payment intent status
    * @returns Our payment status
    */
-  mapStripeStatusToPaymentStatus(stripeStatus: Stripe.PaymentIntent.Status): string {
+  mapStripeStatusToPaymentStatus(stripeStatus: Stripe.PaymentIntent.Status): PaymentStatus {
     switch (stripeStatus) {
       case 'succeeded':
-        return 'authorized';
+        return PaymentStatus.AUTHORIZED;
       case 'requires_payment_method':
       case 'requires_confirmation':
       case 'requires_action':
       case 'processing':
-        return 'processing';
+        return PaymentStatus.PROCESSING;
       case 'requires_capture':
-        return 'authorized';
+        return PaymentStatus.AUTHORIZED;
       case 'canceled':
-        return 'declined';
+        return PaymentStatus.DECLINED;
       default:
-        return 'failed';
+        return PaymentStatus.FAILED;
     }
   }
 }

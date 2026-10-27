@@ -1,11 +1,11 @@
-import { Component, Input, Output, EventEmitter, signal, effect } from '@angular/core';
+import { Component, input, Output, EventEmitter, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
 import { OrderCreateRequest } from '../../../models/order.model';
 import { Product } from '../../../models/product.model';
 import { Customer } from '../../../models/customer.model';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -27,7 +27,7 @@ import { MatSelectModule } from '@angular/material/select';
   styleUrl: './order-modal.css',
 })
 export class OrderModalComponent {
-  @Input() isOpen = signal(false);
+  isOpen = input(false);
   @Output() close = new EventEmitter<void>();
   @Output() success = new EventEmitter<void>();
 
@@ -35,6 +35,7 @@ export class OrderModalComponent {
   products = signal<Product[]>([]);
   isLoading = signal(false);
   error = signal<string | null>(null);
+  errors = signal<Record<string, string>>({});
 
   formData: OrderCreateRequest = {
     customer_id: '',
@@ -83,13 +84,22 @@ export class OrderModalComponent {
   }
 
   onSubmit() {
-    if (!this.formData.customer_id || !this.formData.product_id || this.formData.quantity <= 0) {
-      return;
+    const newErrors: Record<string, string> = {};
+    if (!this.formData.customer_id) {
+      newErrors['customer_id'] = 'Selecione um cliente';
     }
-
+    if (!this.formData.product_id) {
+      newErrors['product_id'] = 'Selecione um produto';
+    }
+    if (this.formData.quantity <= 0) {
+      newErrors['quantity'] = 'Quantidade deve ser maior que zero';
+    }
     const product = this.selectedProduct;
     if (product && product.stock_quantity !== undefined && product.stock_quantity < this.formData.quantity) {
-      this.error.set('Estoque insuficiente');
+      newErrors['quantity'] = `Estoque insuficiente. Disponível: ${product.stock_quantity}`;
+    }
+    if (Object.keys(newErrors).length > 0) {
+      this.errors.set(newErrors);
       return;
     }
 
@@ -116,6 +126,11 @@ export class OrderModalComponent {
     };
     this.selectedProductId.set('');
     this.error.set(null);
+    this.errors.set({});
+  }
+
+  clearError(field: string) {
+    this.errors.update(prev => ({ ...prev, [field]: '' }));
   }
 
   onClose() {

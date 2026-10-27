@@ -39,6 +39,7 @@ export function OrderModal({ isOpen, onClose, onSuccess }: OrderModalProps) {
     quantity: 1,
     total_amount: 0,
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const selectedProduct = products.find((p) => p.id === selectedProductId);
 
@@ -62,31 +63,36 @@ export function OrderModal({ isOpen, onClose, onSuccess }: OrderModalProps) {
         total_amount: 0,
       });
       setSelectedProductId("");
+      setErrors({});
     }
   }, [isOpen]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    // Validação básica
+    const newErrors: Record<string, string> = {};
     if (!formData.customer_id.trim()) {
-      return;
+      newErrors.customer_id = "Selecione um cliente";
     }
     if (!formData.product_id.trim()) {
-      return;
+      newErrors.product_id = "Selecione um produto";
     }
     if (formData.quantity <= 0) {
-      return;
+      newErrors.quantity = "Quantidade deve ser maior que zero";
     }
     if (formData.total_amount <= 0) {
-      return;
+      newErrors.total_amount = "Total inválido";
     }
-
-    // Validação de estoque no frontend
-    if (selectedProduct && selectedProduct.stock_quantity !== undefined) {
-      if (selectedProduct.stock_quantity < formData.quantity) {
-        return;
-      }
+    if (
+      selectedProduct &&
+      selectedProduct.stock_quantity !== undefined &&
+      selectedProduct.stock_quantity < formData.quantity
+    ) {
+      newErrors.quantity = `Estoque insuficiente. Disponível: ${selectedProduct.stock_quantity}`;
+    }
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
     }
 
     try {
@@ -122,12 +128,13 @@ export function OrderModal({ isOpen, onClose, onSuccess }: OrderModalProps) {
             <Label htmlFor="customer">Cliente</Label>
             <Select
               value={formData.customer_id}
-              onValueChange={(value) =>
-                setFormData({ ...formData, customer_id: value })
-              }
+              onValueChange={(value) => {
+                setFormData({ ...formData, customer_id: value });
+                setErrors((prev) => ({ ...prev, customer_id: "" }));
+              }}
               disabled={customersLoading}
             >
-              <SelectTrigger id="customer">
+              <SelectTrigger id="customer" aria-invalid={!!errors.customer_id}>
                 <SelectValue placeholder="Selecione um cliente" />
               </SelectTrigger>
               <SelectContent>
@@ -138,6 +145,9 @@ export function OrderModal({ isOpen, onClose, onSuccess }: OrderModalProps) {
                 ))}
               </SelectContent>
             </Select>
+            {errors.customer_id && (
+              <p className="text-sm text-red-500 mt-1">{errors.customer_id}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -147,10 +157,11 @@ export function OrderModal({ isOpen, onClose, onSuccess }: OrderModalProps) {
               onValueChange={(value) => {
                 setFormData({ ...formData, product_id: value });
                 setSelectedProductId(value);
+                setErrors((prev) => ({ ...prev, product_id: "" }));
               }}
               disabled={productsLoading}
             >
-              <SelectTrigger id="product">
+              <SelectTrigger id="product" aria-invalid={!!errors.product_id}>
                 <SelectValue placeholder="Selecione um produto" />
               </SelectTrigger>
               <SelectContent>
@@ -163,6 +174,9 @@ export function OrderModal({ isOpen, onClose, onSuccess }: OrderModalProps) {
                 ))}
               </SelectContent>
             </Select>
+            {errors.product_id && (
+              <p className="text-sm text-red-500 mt-1">{errors.product_id}</p>
+            )}
           </div>
 
           {selectedProduct && (
@@ -187,14 +201,19 @@ export function OrderModal({ isOpen, onClose, onSuccess }: OrderModalProps) {
               type="number"
               min="1"
               value={formData.quantity}
-              onChange={(e) =>
+              onChange={(e) => {
                 setFormData({
                   ...formData,
                   quantity: parseInt(e.target.value) || 1,
-                })
-              }
+                });
+                setErrors((prev) => ({ ...prev, quantity: "" }));
+              }}
+              aria-invalid={!!errors.quantity}
               required
             />
+            {errors.quantity && (
+              <p className="text-sm text-red-500 mt-1">{errors.quantity}</p>
+            )}
           </div>
 
           <div className="space-y-2">

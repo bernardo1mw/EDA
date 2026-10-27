@@ -1,46 +1,35 @@
-import { LoggerService } from '@nestjs/common';
+import { Logger, LoggerService } from '@nestjs/common';
 
 export class StructuredLogger implements LoggerService {
-  private context?: string;
+  private readonly logger: Logger;
 
   constructor(context?: string) {
-    this.context = context;
+    this.logger = new Logger(context ?? 'PaymentService');
   }
 
-  log(message: string, context?: string) {
-    this.print('info', message, context);
+  log(message: string, context?: string): void {
+    this.info(message, context ? { context } : undefined);
   }
 
-  error(message: string, trace?: string, context?: string) {
-    this.print('error', message, context, { trace });
+  info(message: string, data?: Record<string, unknown>): void {
+    this.logger.log(JSON.stringify({ message, ...data, timestamp: new Date().toISOString() }));
   }
 
-  warn(message: string, context?: string) {
-    this.print('warn', message, context);
+  error(message: string, trace?: string, context?: string): void {
+    this.logger.error(
+      JSON.stringify({ message, trace, context, timestamp: new Date().toISOString() }),
+    );
   }
 
-  debug(message: string, context?: string) {
-    this.print('debug', message, context);
+  warn(message: string, context?: string): void {
+    this.logger.warn(JSON.stringify({ message, context, timestamp: new Date().toISOString() }));
   }
 
-  verbose(message: string, context?: string) {
-    this.print('verbose', message, context);
+  debug(message: string, context?: string): void {
+    this.logger.debug(JSON.stringify({ message, context, timestamp: new Date().toISOString() }));
   }
 
-  private print(level: string, message: string, context?: string, extra?: any) {
-    const logContext = context || this.context || 'PaymentService';
-    const timestamp = new Date().toISOString();
-    
-    const logEntry = {
-      timestamp,
-      level,
-      message,
-      service: 'payment-service',
-      context: logContext,
-      ...extra,
-    };
-
-    console.log(JSON.stringify(logEntry));
+  verbose(message: string, context?: string): void {
+    this.logger.verbose(JSON.stringify({ message, context, timestamp: new Date().toISOString() }));
   }
 }
-

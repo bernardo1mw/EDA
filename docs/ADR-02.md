@@ -1,5 +1,8 @@
 # ADR-0002: Estratégia de Idempotência, Retries e Dead Letter Queues (DLQ)
 
+## Status
+Accepted — DLQ routing devidamente conectado (Phase 2)
+
 ## Contexto
 
 Na arquitetura orientada a eventos do projeto Event Stream Orders, os serviços se comunicam via RabbitMQ. Como eventos podem ser entregues mais de uma vez (at-least-once delivery), era necessário garantir que os consumidores fossem **idempotentes** para evitar efeitos colaterais indesejados, como duplicação de pedidos ou notificações.
@@ -25,3 +28,7 @@ Adotamos a seguinte estratégia:
 - A introdução de Redis para controle de idempotência adiciona uma dependência externa e custo operacional.
 - A lógica de reentrega e DLQ aumenta a complexidade do consumidor e precisa ser bem monitorada para não gerar filas não processadas.
 - Exige políticas operacionais claras para lidar com DLQs e garantir que mensagens problemáticas sejam analisadas a tempo.
+
+## Atualizações
+
+- **Phase 2:** O roteamento para DLQ foi devidamente conectado em todos os consumidores Go (inventory-service, notification-service, outbox-dispatcher). Mensagens que excedem `max_retries` são agora enviadas automaticamente para a DLQ correspondente via `x-dead-letter-exchange`.

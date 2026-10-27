@@ -21,7 +21,7 @@ export class PaymentService {
     try {
       await this.processPaymentUseCase.execute(orderEvent);
     } catch (error) {
-      this.logger.error(`Failed to process order created event: ${orderEvent.orderId}`, error.stack);
+      this.logger.error(`Failed to process order created event: ${orderEvent.orderId}`, (error as Error).stack);
       throw error;
     }
   }

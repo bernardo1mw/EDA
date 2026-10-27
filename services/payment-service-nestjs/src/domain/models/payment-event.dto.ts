@@ -1,28 +1,11 @@
-import { IsString, IsNumber, IsDateString, IsOptional, IsUUID } from 'class-validator';
+import { PaymentStatus } from './payment-status.enum';
 
-export class PaymentEventDto {
-  @IsString()
+export interface PaymentEventData {
   paymentId: string;
-
-  @IsString()
-  @IsUUID()
   orderId: string;
-
-  @IsNumber()
   amount: number;
-
-  @IsString()
-  status: string;
-
-  @IsDateString()
+  status: PaymentStatus;
   processedAt: string;
-
-  @IsOptional()
-  @IsString()
   traceId?: string;
-
-  @IsOptional()
-  @IsString()
   spanId?: string;
 }
-

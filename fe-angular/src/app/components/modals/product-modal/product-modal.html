@@ -1,1 +1,61 @@
-<p>product-modal works!</p>
+@if (isOpen()) {
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div role="dialog" aria-modal="true" aria-labelledby="product-modal-title" class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full mx-4 p-6">
+      <h2 id="product-modal-title" class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+        {{ product ? 'Editar Produto' : 'Novo Produto' }}
+      </h2>
+
+      @if (error()) {
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
+          <p class="text-red-800 dark:text-red-200 text-sm">{{ error() }}</p>
+        </div>
+      }
+
+      <form (ngSubmit)="onSubmit()" class="space-y-4">
+        <mat-form-field class="w-full">
+          <mat-label>Nome *</mat-label>
+          <input matInput [(ngModel)]="formData.name" name="name" required
+            (ngModelChange)="clearError('name')" [attr.aria-invalid]="!!errors()['name']">
+        </mat-form-field>
+        @if (errors()['name']) {
+          <p class="text-sm text-red-500 mt-1">{{ errors()['name'] }}</p>
+        }
+
+        <mat-form-field class="w-full">
+          <mat-label>SKU</mat-label>
+          <input matInput [(ngModel)]="formData.sku" name="sku">
+        </mat-form-field>
+
+        <mat-form-field class="w-full">
+          <mat-label>Preço (R$) *</mat-label>
+          <input matInput type="number" [(ngModel)]="formData.price" name="price" min="0.01" step="0.01" required
+            (ngModelChange)="clearError('price')" [attr.aria-invalid]="!!errors()['price']">
+        </mat-form-field>
+        @if (errors()['price']) {
+          <p class="text-sm text-red-500 mt-1">{{ errors()['price'] }}</p>
+        }
+
+        <mat-form-field class="w-full">
+          <mat-label>Estoque *</mat-label>
+          <input matInput type="number" [(ngModel)]="formData.stock_quantity" name="stock_quantity" min="0" required
+            (ngModelChange)="clearError('stock_quantity')" [attr.aria-invalid]="!!errors()['stock_quantity']">
+        </mat-form-field>
+        @if (errors()['stock_quantity']) {
+          <p class="text-sm text-red-500 mt-1">{{ errors()['stock_quantity'] }}</p>
+        }
+
+        <mat-form-field class="w-full">
+          <mat-label>Descrição</mat-label>
+          <input matInput [(ngModel)]="formData.description" name="description">
+        </mat-form-field>
+
+        <div class="flex gap-3 pt-4">
+          <button mat-raised-button color="primary" type="submit" [disabled]="isLoading()">
+            {{ isLoading() ? 'Salvando...' : (product ? 'Salvar' : 'Criar Produto') }}
+          </button>
+          <button mat-button type="button" (click)="onClose()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

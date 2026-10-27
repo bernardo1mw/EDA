@@ -1,62 +1,60 @@
-import { Component, Input, Output, EventEmitter, signal, effect } from '@angular/core';
+import { Component, Input, input, Output, EventEmitter, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
 import { Order } from '../../../models/order.model';
-import { MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
   selector: 'app-payment-modal',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatDialogModule,
-    MatButtonModule,
-    MatProgressSpinnerModule
-  ],
+  imports: [CommonModule, MatButtonModule, MatProgressSpinnerModule],
   templateUrl: './payment-modal.html',
   styleUrl: './payment-modal.css',
 })
 export class PaymentModalComponent {
-  @Input() isOpen = signal(false);
+  isOpen = input(false);
   @Input() order!: Order;
   @Output() close = new EventEmitter<void>();
   @Output() success = new EventEmitter<void>();
 
   isLoading = signal(false);
   error = signal<string | null>(null);
-  clientSecret = signal<string | null>(null);
-  paymentIntentId = signal<string | null>(null);
+  isSuccess = signal(false);
 
   constructor(private apiService: ApiService) {
     effect(() => {
       if (this.isOpen() && this.order) {
-        this.createPaymentIntent();
+        this.processPayment();
       } else {
         this.reset();
       }
     });
   }
 
-  createPaymentIntent() {
+  processPayment() {
     this.isLoading.set(true);
-    this.apiService.createPaymentIntent(
-      this.order.id,
-      this.order.total_amount,
-      'card'
-    ).subscribe({
+    this.error.set(null);
+    this.isSuccess.set(false);
+
+    this.apiService.createPaymentIntent(this.order.id, this.order.total_amount, 'card').subscribe({
       next: (result) => {
-        this.clientSecret.set(result.clientSecret);
-        this.paymentIntentId.set(result.paymentIntentId);
+        // Demo-only: Stripe test payment method
+        this.apiService.confirmPayment(result.payment_intent_id, 'pm_card_visa', this.order.id).subscribe({
+          next: () => {
+            this.isLoading.set(false);
+            this.isSuccess.set(true);
+          },
+          error: (err: Error) => {
+            this.error.set(err.message || 'Erro ao confirmar pagamento');
+            this.isLoading.set(false);
+          },
+        });
+      },
+      error: (err: Error) => {
+        this.error.set(err.message || 'Erro ao criar payment intent');
         this.isLoading.set(false);
       },
-      error: (error) => {
-        this.error.set(error.message || 'Erro ao criar payment intent');
-        this.isLoading.set(false);
-      }
     });
   }
 
@@ -65,9 +63,15 @@ export class PaymentModalComponent {
     this.reset();
   }
 
+  onSuccess() {
+    this.success.emit();
+    this.close.emit();
+    this.reset();
+  }
+
   reset() {
-    this.clientSecret.set(null);
-    this.paymentIntentId.set(null);
     this.error.set(null);
+    this.isSuccess.set(false);
+    this.isLoading.set(false);
   }
 }

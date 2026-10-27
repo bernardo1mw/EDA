@@ -16,7 +16,12 @@ import appConfig from '@/core/config';
     }),
   ],
   controllers: [PaymentController, PaymentMessageHandler],
-  providers: [...paymentProviders, RawRmqConsumer, StripeService],
+  providers: [
+    ...paymentProviders,
+    RawRmqConsumer,
+    StripeService,
+    { provide: 'IPaymentGateway', useExisting: StripeService },
+  ],
   exports: [...paymentProviders, RawRmqConsumer],
 })
 export class PaymentModule {}

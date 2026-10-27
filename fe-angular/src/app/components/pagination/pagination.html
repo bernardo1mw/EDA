@@ -1,0 +1,21 @@
+@if (totalPages() > 1) {
+  <div class="flex items-center justify-center gap-2 mt-6">
+    <button
+      [disabled]="!hasPrev()"
+      (click)="prev()"
+      class="px-3 py-1 rounded border disabled:opacity-50"
+    >
+      Anterior
+    </button>
+    <span class="text-sm text-gray-500">
+      Página {{ _currentPage() }} de {{ totalPages() }}
+    </span>
+    <button
+      [disabled]="!hasNext()"
+      (click)="next()"
+      class="px-3 py-1 rounded border disabled:opacity-50"
+    >
+      Próxima
+    </button>
+  </div>
+}

@@ -1,5 +1,6 @@
 # Interface Layer - API Routes - Customers
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Depends, status
+from app.core.auth import get_current_user
 from typing import List
 from uuid import UUID
 import logging
@@ -25,12 +26,20 @@ logger = logging.getLogger(__name__)
 # Create router
 router = APIRouter()
 
-# Create repository and use cases
-customer_repository = CustomerRepository()
-create_customer_use_case = CreateCustomerUseCase(customer_repository)
-get_customer_use_case = GetCustomerUseCase(customer_repository)
-list_customers_use_case = ListCustomersUseCase(customer_repository)
-update_customer_use_case = UpdateCustomerUseCase(customer_repository)
+def _get_repository() -> CustomerRepository:
+    return CustomerRepository()
+
+def get_create_use_case(repo: CustomerRepository = Depends(_get_repository)) -> CreateCustomerUseCase:
+    return CreateCustomerUseCase(repo)
+
+def get_get_use_case(repo: CustomerRepository = Depends(_get_repository)) -> GetCustomerUseCase:
+    return GetCustomerUseCase(repo)
+
+def get_list_use_case(repo: CustomerRepository = Depends(_get_repository)) -> ListCustomersUseCase:
+    return ListCustomersUseCase(repo)
+
+def get_update_use_case(repo: CustomerRepository = Depends(_get_repository)) -> UpdateCustomerUseCase:
+    return UpdateCustomerUseCase(repo)
 
 @router.post(
     "/",
@@ -46,10 +55,10 @@ update_customer_use_case = UpdateCustomerUseCase(customer_repository)
         500: {"description": "Internal server error"}
     }
 )
-async def create_customer(request: CustomerCreateRequest) -> CustomerResponse:
+async def create_customer(request: CustomerCreateRequest, current_user: dict = Depends(get_current_user), use_case: CreateCustomerUseCase = Depends(get_create_use_case)) -> CustomerResponse:
     """Create a new customer"""
     try:
-        customer_response = await create_customer_use_case.execute(request)
+        customer_response = await use_case.execute(request)
         return customer_response
         
     except InvalidCustomerDataError as e:
@@ -81,7 +90,8 @@ async def create_customer(request: CustomerCreateRequest) -> CustomerResponse:
 )
 async def list_customers(
     limit: int = 100,
-    offset: int = 0
+    offset: int = 0,
+    use_case: ListCustomersUseCase = Depends(get_list_use_case)
 ) -> List[CustomerResponse]:
     """List all customers"""
     try:
@@ -90,14 +100,14 @@ async def list_customers(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Limit must be between 1 and 1000"
             )
-        
+
         if offset < 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Offset must be non-negative"
             )
-        
-        customers = await list_customers_use_case.execute(limit=limit, offset=offset)
+
+        customers = await use_case.execute(limit=limit, offset=offset)
         return customers
         
     except HTTPException:
@@ -121,10 +131,10 @@ async def list_customers(
         500: {"description": "Internal server error"}
     }
 )
-async def get_customer(customer_id: UUID) -> CustomerResponse:
+async def get_customer(customer_id: UUID, use_case: GetCustomerUseCase = Depends(get_get_use_case)) -> CustomerResponse:
     """Get customer by ID"""
     try:
-        customer_response = await get_customer_use_case.execute(customer_id)
+        customer_response = await use_case.execute(customer_id)
         return customer_response
         
     except CustomerNotFoundError as e:
@@ -153,10 +163,10 @@ async def get_customer(customer_id: UUID) -> CustomerResponse:
         500: {"description": "Internal server error"}
     }
 )
-async def update_customer(customer_id: UUID, request: CustomerUpdateRequest) -> CustomerResponse:
+async def update_customer(customer_id: UUID, request: CustomerUpdateRequest, current_user: dict = Depends(get_current_user), use_case: UpdateCustomerUseCase = Depends(get_update_use_case)) -> CustomerResponse:
     """Update a customer"""
     try:
-        customer_response = await update_customer_use_case.execute(customer_id, request)
+        customer_response = await use_case.execute(customer_id, request)
         return customer_response
         
     except CustomerNotFoundError as e:

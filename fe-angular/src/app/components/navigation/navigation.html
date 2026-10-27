@@ -1,4 +1,4 @@
-<nav class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+<nav aria-label="Main navigation" class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex justify-between h-16">
       <div class="flex">
@@ -20,6 +20,44 @@
           }
         </div>
       </div>
+      <div class="flex items-center sm:hidden">
+        <button
+          type="button"
+          (click)="toggleMenu()"
+          [attr.aria-expanded]="menuOpen()"
+          aria-controls="mobile-menu"
+          aria-label="Abrir menu"
+          class="inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-800"
+        >
+          @if (menuOpen()) {
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          } @else {
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          }
+        </button>
+      </div>
     </div>
   </div>
+
+  @if (menuOpen()) {
+    <div id="mobile-menu" class="sm:hidden border-t border-gray-200 dark:border-gray-700">
+      <div class="pt-2 pb-3 space-y-1">
+        @for (item of navItems; track item.href) {
+          <a
+            [routerLink]="item.href"
+            routerLinkActive="bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
+            [routerLinkActiveOptions]="{exact: item.href === '/'}"
+            (click)="closeMenu()"
+            class="block pl-3 pr-4 py-2 border-l-4 text-base font-medium border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+          >
+            {{ item.label }}
+          </a>
+        }
+      </div>
+    </div>
+  }
 </nav>

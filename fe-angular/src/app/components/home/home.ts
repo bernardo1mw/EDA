@@ -1,12 +1,17 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed } from '@angular/core';
+import { firstValueFrom, interval, Subscription } from 'rxjs';
+import { takeWhile, switchMap } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
-import { Order } from '../../models/order.model';
+import { Order, OrderStatus } from '../../models/order.model';
 import { Customer } from '../../models/customer.model';
 import { OrderCardComponent } from '../orders/order-card/order-card';
 import { OrderModalComponent } from '../modals/order-modal/order-modal';
+import { PaginationComponent } from '../pagination/pagination';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+
+const PAGE_SIZE = 20;
 
 interface OrdersByCustomer {
   customer: Customer | null;
@@ -20,18 +25,31 @@ interface OrdersByCustomer {
     CommonModule,
     OrderCardComponent,
     OrderModalComponent,
+    PaginationComponent,
     MatButtonModule,
     MatProgressSpinnerModule
   ],
   templateUrl: './home.html',
   styleUrl: './home.css'
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, OnDestroy {
   orders = signal<Order[]>([]);
   customers = signal<Customer[]>([]);
   isLoading = signal(false);
   error = signal<string | null>(null);
   isOrderModalOpen = signal(false);
+  page = signal(1);
+  readonly PAGE_SIZE = PAGE_SIZE;
+
+  private pollingSubscription: Subscription | null = null;
+
+  estimatedTotal = computed(() => {
+    const orders = this.orders();
+    const page = this.page();
+    return orders.length < PAGE_SIZE
+      ? (page - 1) * PAGE_SIZE + orders.length
+      : page * PAGE_SIZE + 1;
+  });
 
   ordersByCustomer = computed(() => {
     const grouped: Record<string, OrdersByCustomer> = {};
@@ -67,13 +85,19 @@ export class HomeComponent implements OnInit {
     this.loadData();
   }
 
+  ngOnDestroy() {
+    this.pollingSubscription?.unsubscribe();
+  }
+
   loadData() {
     this.isLoading.set(true);
     this.error.set(null);
 
+    const offset = (this.page() - 1) * PAGE_SIZE;
+
     Promise.all([
-      this.apiService.listAllOrders(1000, 0).toPromise(),
-      this.apiService.listCustomers(1000, 0).toPromise()
+      firstValueFrom(this.apiService.listAllOrders(PAGE_SIZE, offset)),
+      firstValueFrom(this.apiService.listCustomers(1000, 0))
     ]).then(
       ([orders, customers]) => {
         this.orders.set(orders || []);
@@ -88,17 +112,29 @@ export class HomeComponent implements OnInit {
   }
 
   handlePaymentSuccess() {
-    // Aguardar um pouco para o backend processar o pagamento
-    setTimeout(() => {
-      this.loadData();
-      // Se o status ainda não foi atualizado, tentar novamente após mais alguns segundos
-      setTimeout(() => {
-        this.loadData();
-      }, 3000);
-    }, 2000);
+    this.startPolling();
   }
 
   handleOrderCreated() {
+    this.page.set(1);
+    this.loadData();
+  }
+
+  private startPolling() {
+    this.pollingSubscription?.unsubscribe();
+    const offset = (this.page() - 1) * PAGE_SIZE;
+    this.pollingSubscription = interval(3000).pipe(
+      takeWhile(() =>
+        this.orders().some(
+          (o) => o.status === OrderStatus.PENDING || o.status === OrderStatus.PROCESSING
+        )
+      ),
+      switchMap(() => this.apiService.listAllOrders(PAGE_SIZE, offset))
+    ).subscribe((orders) => this.orders.set(orders ?? []));
+  }
+
+  onPageChange(page: number) {
+    this.page.set(page);
     this.loadData();
   }
 

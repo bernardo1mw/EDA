@@ -75,7 +75,7 @@ CREATE TABLE payment_events (
 CREATE TABLE inventory_events (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     order_id UUID NOT NULL REFERENCES orders(id),
-    product_id VARCHAR(255) NOT NULL,
+    product_id UUID NOT NULL REFERENCES products(id),
     quantity INTEGER NOT NULL,
     status VARCHAR(50) NOT NULL,
     processed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -86,7 +86,7 @@ CREATE TABLE inventory_events (
 CREATE TABLE notification_events (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     order_id UUID NOT NULL REFERENCES orders(id),
-    customer_id VARCHAR(255) NOT NULL,
+    customer_id UUID NOT NULL REFERENCES customers(id),
     notification_type VARCHAR(100) NOT NULL,
     status VARCHAR(50) NOT NULL,
     sent_at TIMESTAMP WITH TIME ZONE,

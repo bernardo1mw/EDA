@@ -58,8 +58,8 @@
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             @for (order of entry[1].orders; track order.id) {
-              <app-order-card 
-                [order]="order" 
+              <app-order-card
+                [order]="order"
                 (paymentSuccess)="handlePaymentSuccess()"
               ></app-order-card>
             }
@@ -67,10 +67,16 @@
         </div>
       }
     </div>
+    <app-pagination
+      [currentPage]="page()"
+      [totalItems]="estimatedTotal()"
+      [pageSize]="PAGE_SIZE"
+      (pageChange)="onPageChange($event)"
+    ></app-pagination>
   }
 
   <app-order-modal
-    [isOpen]="isOrderModalOpen"
+    [isOpen]="isOrderModalOpen()"
     (close)="closeOrderModal()"
     (success)="handleOrderCreated()"
   ></app-order-modal>

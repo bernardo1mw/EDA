@@ -1,8 +1,8 @@
 # Domain Models - Customer
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 from uuid import UUID, uuid4
-from pydantic import BaseModel, Field, validator, EmailStr
+from pydantic import BaseModel, Field, EmailStr
 
 class CustomerCreateRequest(BaseModel):
     """Request model for creating a customer"""
@@ -74,7 +74,7 @@ class Customer(BaseModel):
         address: Optional[str] = None
     ) -> "Customer":
         """Create a new customer"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         return cls(
             id=uuid4(),
             name=name,
@@ -101,7 +101,7 @@ class Customer(BaseModel):
             self.phone = phone
         if address is not None:
             self.address = address
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert customer to dictionary"""

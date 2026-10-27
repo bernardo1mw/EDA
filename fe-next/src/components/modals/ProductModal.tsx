@@ -38,6 +38,7 @@ export function ProductModal({
     sku: "",
     stock_quantity: 0,
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (product) {
@@ -57,19 +58,24 @@ export function ProductModal({
         stock_quantity: 0,
       });
     }
+    setErrors({});
   }, [product, isOpen]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    // Validação básica
+    const newErrors: Record<string, string> = {};
     if (!formData.name.trim()) {
-      return;
+      newErrors.name = "Nome é obrigatório";
     }
     if (formData.price <= 0) {
-      return;
+      newErrors.price = "Preço deve ser maior que zero";
     }
     if ((formData.stock_quantity ?? 0) < 0) {
+      newErrors.stock_quantity = "Estoque não pode ser negativo";
+    }
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
@@ -126,12 +132,17 @@ export function ProductModal({
               id="name"
               type="text"
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
+              onChange={(e) => {
+                setFormData({ ...formData, name: e.target.value });
+                setErrors((prev) => ({ ...prev, name: "" }));
+              }}
               placeholder="Produto Exemplo"
+              aria-invalid={!!errors.name}
               required
             />
+            {errors.name && (
+              <p className="text-sm text-red-500 mt-1">{errors.name}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -155,15 +166,20 @@ export function ProductModal({
               step="0.01"
               min="0.01"
               value={formData.price}
-              onChange={(e) =>
+              onChange={(e) => {
                 setFormData({
                   ...formData,
                   price: parseFloat(e.target.value) || 0,
-                })
-              }
+                });
+                setErrors((prev) => ({ ...prev, price: "" }));
+              }}
               placeholder="99.99"
+              aria-invalid={!!errors.price}
               required
             />
+            {errors.price && (
+              <p className="text-sm text-red-500 mt-1">{errors.price}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -186,15 +202,20 @@ export function ProductModal({
               type="number"
               min="0"
               value={formData.stock_quantity || 0}
-              onChange={(e) =>
+              onChange={(e) => {
                 setFormData({
                   ...formData,
                   stock_quantity: parseInt(e.target.value) || 0,
-                })
-              }
+                });
+                setErrors((prev) => ({ ...prev, stock_quantity: "" }));
+              }}
               placeholder="0"
+              aria-invalid={!!errors.stock_quantity}
               required
             />
+            {errors.stock_quantity && (
+              <p className="text-sm text-red-500 mt-1">{errors.stock_quantity}</p>
+            )}
           </div>
 
           <DialogFooter>

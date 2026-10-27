@@ -1,16 +1,12 @@
 FROM golang:1.21-alpine AS builder
-
 WORKDIR /app
-COPY go.mod go.sum ./
-RUN go mod tidy && go mod download
+COPY go-shared/ /app/go-shared/
+COPY notification-service/ /app/notification-service/
+WORKDIR /app/notification-service
+RUN go mod download && CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/
 
-COPY . .
-RUN go get -d ./... && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
-
-FROM alpine:latest
+FROM alpine:3.19
 RUN apk --no-cache add ca-certificates
 WORKDIR /root/
-
-COPY --from=builder /app/main .
-
+COPY --from=builder /app/notification-service/main .
 CMD ["./main"]

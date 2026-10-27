@@ -22,6 +22,7 @@ O sistema simula o fluxo de um e-commerce simplificado — **criação de pedido
 
 ### Incluído
 
+* **Frontends:** Next.js 16 (React, Server Components) e Angular 20 (Signals, Standalone).
 * **Microsserviços:**
 
   * **Orders API:** Criação de pedidos e persistência com *Transactional Outbox*.
@@ -29,16 +30,13 @@ O sistema simula o fluxo de um e-commerce simplificado — **criação de pedido
   * **Payment Service:** Simulação de autorização de pagamento.
   * **Inventory Service:** Reserva e liberação de estoque.
   * **Notification Service:** Simulação de envio de e-mails.
-  * **Aggregator Service:** Geração de relatórios e KPIs.
 * **Mensageria:** RabbitMQ com exchanges, DLQs e retries automáticos.
 * **Storage:** PostgreSQL (transacional e materialized views), Redis (dedup/idempotência).
 * **Observabilidade:** Elastic Stack (ELK) + OpenTelemetry (métricas, logs, traces).
-* **Testes de Carga:** k6 com thresholds de latência, erro e throughput.
+* **Testes de Carga:** k6 com thresholds de latência, erro e throughput (integrado em `scripts/monitor.sh`).
 
 ### Excluído
 
-* Autenticação e autorização reais.
-* Frontend UI (apenas API).
 * Integrações externas reais (pagamento, e-mail, etc.).
 
 ---
@@ -52,7 +50,6 @@ O sistema simula o fluxo de um e-commerce simplificado — **criação de pedido
 | RF03 | Processar pagamento              | O serviço Payment consome `order.created` e publica `payment.authorized` ou `payment.declined`.                      |
 | RF04 | Reservar estoque                 | O serviço Inventory consome `payment.authorized` e publica `inventory.reserved` (ou `inventory.rejected` se falhar). |
 | RF05 | Enviar notificação               | O serviço Notification consome `inventory.reserved` e registra o envio do e-mail.                                    |
-| RF06 | Agregar métricas                 | O serviço Aggregator mantém visões e estatísticas de throughput e tempo médio de processamento.                      |
 
 ---
 
@@ -65,7 +62,7 @@ O sistema simula o fluxo de um e-commerce simplificado — **criação de pedido
 | **Disponibilidade** | Resiliência a falhas de serviço              | Nenhuma perda de mensagem sob reinício isolado |
 | **Escalabilidade**  | Suporte a múltiplos consumidores por serviço | Escalável horizontalmente                      |
 | **Confiabilidade**  | Entrega de eventos                           | *At-least-once* com idempotência               |
-| **Observabilidade** | Logs e métricas centralizados                | 100% dos serviços rastreáveis via trace_id     |
+| **Observabilidade** | Logs e métricas centralizados                | Go services com OTel; Python com OTel (Phase 2); NestJS com structured logging — todos com trace_id |
 | **Testabilidade**   | Testes automatizados e de carga              | CI + k6 stress test                            |
 | **Mantenabilidade** | Código modular e instrumentado               | Arquitetura limpa e desacoplada                |
 
@@ -83,8 +80,6 @@ Cliente → Orders API → (TX: Order + Outbox)
           Inventory Service → publish "inventory.reserved"/"inventory.rejected"
              ↓
           Notification Service → log envio e métricas
-             ↓
-          Aggregator → atualiza KPIs
 ```
 
 ---

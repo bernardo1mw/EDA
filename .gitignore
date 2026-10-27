@@ -161,6 +161,7 @@ downloads/
 eggs/
 .eggs/
 lib/
+!fe-next/src/lib/
 lib64/
 parts/
 sdist/

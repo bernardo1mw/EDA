@@ -1,1 +1,61 @@
-<p>products works!</p>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="mb-8 flex justify-between items-center">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Produtos</h1>
+      <p class="mt-2 text-gray-600 dark:text-gray-400">Gerencie seus produtos</p>
+    </div>
+    <button mat-raised-button color="primary" (click)="openAddModal()">Novo Produto</button>
+  </div>
+
+  @if (loading()) {
+    <div class="flex justify-center items-center py-12">
+      <mat-spinner diameter="48"></mat-spinner>
+    </div>
+  } @else if (error()) {
+    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+      <p class="text-red-800 dark:text-red-200">{{ error() }}</p>
+      <button mat-button color="primary" (click)="loadProducts()" class="mt-4">Tentar Novamente</button>
+    </div>
+  } @else if (products().length === 0) {
+    <div class="text-center py-12">
+      <p class="text-gray-500 dark:text-gray-400 text-lg mb-4">Nenhum produto cadastrado.</p>
+      <button mat-raised-button color="primary" (click)="openAddModal()">Criar Primeiro Produto</button>
+    </div>
+  } @else {
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      @for (product of products(); track product.id) {
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ product.name }}</h3>
+          <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-2">
+            {{ formatCurrency(product.price) }}
+          </p>
+          @if (product.sku) {
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">SKU: {{ product.sku }}</p>
+          }
+          @if (product.stock_quantity !== undefined) {
+            <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">Estoque: {{ product.stock_quantity }}</p>
+          }
+          @if (product.description) {
+            <p class="text-sm text-gray-600 dark:text-gray-300 mt-2">{{ product.description }}</p>
+          }
+          <div class="mt-4">
+            <button mat-button color="primary" (click)="openEditModal(product)">Editar</button>
+          </div>
+        </div>
+      }
+    </div>
+    <app-pagination
+      [currentPage]="page()"
+      [totalItems]="allProducts().length"
+      [pageSize]="PAGE_SIZE"
+      (pageChange)="onPageChange($event)"
+    ></app-pagination>
+  }
+
+  <app-product-modal
+    [isOpen]="isModalOpen()"
+    [product]="editingProduct()"
+    (close)="closeModal()"
+    (success)="handleSuccess()"
+  ></app-product-modal>
+</div>

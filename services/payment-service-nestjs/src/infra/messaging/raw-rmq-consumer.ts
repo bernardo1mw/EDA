@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
-import { connect } from 'amqplib';
+import * as amqp from 'amqplib';
 import { StructuredLogger } from '../../core/logging';
 import { PaymentService } from '../../app/usecases/payment.service';
 import { OrderCreatedEventDto } from '../controllers/dtos/order-created-event.dto';
@@ -9,8 +9,8 @@ import { OrderCreatedEventDto } from '../controllers/dtos/order-created-event.dt
 @Injectable()
 export class RawRmqConsumer implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new StructuredLogger('RawRmqConsumer');
-  private connection: any = null;
-  private channel: any = null;
+  private connection: amqp.ChannelModel | null = null;
+  private channel: amqp.Channel | null = null;
   private readonly queueName = 'order.created';
 
   private paymentService!: PaymentService;
@@ -34,8 +34,15 @@ export class RawRmqConsumer implements OnModuleInit, OnModuleDestroy {
       const rabbitmq = this.configService.get('app.rabbitmq');
       const url = `amqp://${rabbitmq.username}:${rabbitmq.password}@${rabbitmq.host}:${rabbitmq.port}${rabbitmq.vhost}`;
 
-      this.connection = await connect(url);
+      this.connection = await amqp.connect(url);
       this.channel = await this.connection.createChannel();
+
+      this.connection.on('close', () => {
+        this.logger.warn('RabbitMQ connection closed, reconnecting in 5s...');
+        this.connection = null;
+        this.channel = null;
+        setTimeout(() => this.start().catch(() => {}), 5000);
+      });
       
       // Declare exchange (amq.topic is a built-in exchange, but we'll ensure it exists)
       const exchangeName = 'amq.topic';

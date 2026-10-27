@@ -1,8 +1,8 @@
 # Domain Models - Product
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 from uuid import UUID, uuid4
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 class ProductCreateRequest(BaseModel):
     """Request model for creating a product"""
@@ -12,9 +12,9 @@ class ProductCreateRequest(BaseModel):
     sku: Optional[str] = Field(None, max_length=100, description="Product SKU")
     stock_quantity: int = Field(0, ge=0, description="Initial stock quantity")
     
-    @validator('price')
-    def validate_price(cls, v):
-        """Validate price precision"""
+    @field_validator('price')
+    @classmethod
+    def validate_price(cls, v: float) -> float:
         if round(v, 2) != v:
             raise ValueError('Price must have at most 2 decimal places')
         return v
@@ -38,9 +38,9 @@ class ProductUpdateRequest(BaseModel):
     sku: Optional[str] = Field(None, max_length=100, description="Product SKU")
     stock_quantity: int = Field(..., ge=0, description="Stock quantity")
     
-    @validator('price')
-    def validate_price(cls, v):
-        """Validate price precision"""
+    @field_validator('price')
+    @classmethod
+    def validate_price(cls, v: float) -> float:
         if round(v, 2) != v:
             raise ValueError('Price must have at most 2 decimal places')
         return v
@@ -95,7 +95,7 @@ class Product(BaseModel):
         stock_quantity: int = 0
     ) -> "Product":
         """Create a new product"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         return cls(
             id=uuid4(),
             name=name,
@@ -112,7 +112,7 @@ class Product(BaseModel):
         if self.stock_quantity + quantity < 0:
             raise ValueError("Insufficient stock")
         self.stock_quantity += quantity
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
     
     def reserve_stock(self, quantity: int) -> bool:
         """Reserve stock (decrease available stock)"""

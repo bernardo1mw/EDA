@@ -12,7 +12,7 @@ export const productKeys = {
 };
 
 // Hook para listar todos os produtos
-export function useProducts(limit: number = 1000, offset: number = 0) {
+export function useProducts(limit: number = 20, offset: number = 0) {
   return useQuery({
     queryKey: [...productKeys.lists(), limit, offset],
     queryFn: () => apiClient.listProducts(limit, offset),

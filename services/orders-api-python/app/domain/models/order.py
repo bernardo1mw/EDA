@@ -1,8 +1,8 @@
 # Domain Models and Business Logic
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 from uuid import UUID, uuid4
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from enum import Enum
 import json
 
@@ -21,8 +21,9 @@ class OrderCreateRequest(BaseModel):
     quantity: int = Field(..., gt=0, le=1000, description="Quantity of items")
     total_amount: float = Field(..., gt=0, description="Total amount for the order")
     
-    @validator('total_amount')
-    def validate_total_amount(cls, v):
+    @field_validator('total_amount')
+    @classmethod
+    def validate_total_amount(cls, v: float) -> float:
         """Validate total amount precision"""
         if round(v, 2) != v:
             raise ValueError('Total amount must have at most 2 decimal places')
@@ -76,7 +77,7 @@ class Order(BaseModel):
         total_amount: float
     ) -> "Order":
         """Create a new order"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         return cls(
             id=uuid4(),
             customer_id=customer_id,
@@ -91,7 +92,7 @@ class Order(BaseModel):
     def update_status(self, new_status: OrderStatus) -> None:
         """Update order status"""
         self.status = new_status
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert order to dictionary"""
@@ -144,13 +145,13 @@ class OutboxEvent(BaseModel):
             aggregate_type="Order",
             event_type="order.created",
             event_data=event_data,
-            created_at=datetime.utcnow()
+            created_at=datetime.now(timezone.utc)
         )
     
     def mark_as_processed(self) -> None:
         """Mark event as processed"""
         self.status = "PROCESSED"
-        self.processed_at = datetime.utcnow()
+        self.processed_at = datetime.now(timezone.utc)
     
     def increment_retry(self) -> None:
         """Increment retry count"""

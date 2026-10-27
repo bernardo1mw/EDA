@@ -12,7 +12,7 @@ export const customerKeys = {
 };
 
 // Hook para listar todos os clientes
-export function useCustomers(limit: number = 1000, offset: number = 0) {
+export function useCustomers(limit: number = 20, offset: number = 0) {
   return useQuery({
     queryKey: [...customerKeys.lists(), limit, offset],
     queryFn: () => apiClient.listCustomers(limit, offset),

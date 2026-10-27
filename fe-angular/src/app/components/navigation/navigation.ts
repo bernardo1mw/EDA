@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 
@@ -10,9 +10,19 @@ import { CommonModule } from '@angular/common';
   styleUrl: './navigation.css'
 })
 export class NavigationComponent {
+  menuOpen = signal(false);
+
   navItems = [
     { href: '/', label: 'Pedidos' },
     { href: '/customers', label: 'Clientes' },
     { href: '/products', label: 'Produtos' }
   ];
+
+  toggleMenu() {
+    this.menuOpen.update(v => !v);
+  }
+
+  closeMenu() {
+    this.menuOpen.set(false);
+  }
 }

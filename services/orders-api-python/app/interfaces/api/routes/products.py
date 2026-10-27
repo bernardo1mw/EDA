@@ -1,5 +1,6 @@
 # Interface Layer - API Routes - Products
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Depends, status
+from app.core.auth import get_current_user
 from typing import List
 from uuid import UUID
 import logging
@@ -24,12 +25,20 @@ logger = logging.getLogger(__name__)
 # Create router
 router = APIRouter()
 
-# Create repository and use cases
-product_repository = ProductRepository()
-create_product_use_case = CreateProductUseCase(product_repository)
-get_product_use_case = GetProductUseCase(product_repository)
-list_products_use_case = ListProductsUseCase(product_repository)
-update_product_use_case = UpdateProductUseCase(product_repository)
+def _get_repository() -> ProductRepository:
+    return ProductRepository()
+
+def get_create_use_case(repo: ProductRepository = Depends(_get_repository)) -> CreateProductUseCase:
+    return CreateProductUseCase(repo)
+
+def get_get_use_case(repo: ProductRepository = Depends(_get_repository)) -> GetProductUseCase:
+    return GetProductUseCase(repo)
+
+def get_list_use_case(repo: ProductRepository = Depends(_get_repository)) -> ListProductsUseCase:
+    return ListProductsUseCase(repo)
+
+def get_update_use_case(repo: ProductRepository = Depends(_get_repository)) -> UpdateProductUseCase:
+    return UpdateProductUseCase(repo)
 
 @router.post(
     "/",
@@ -44,10 +53,10 @@ update_product_use_case = UpdateProductUseCase(product_repository)
         500: {"description": "Internal server error"}
     }
 )
-async def create_product(request: ProductCreateRequest) -> ProductResponse:
+async def create_product(request: ProductCreateRequest, current_user: dict = Depends(get_current_user), use_case: CreateProductUseCase = Depends(get_create_use_case)) -> ProductResponse:
     """Create a new product"""
     try:
-        product_response = await create_product_use_case.execute(request)
+        product_response = await use_case.execute(request)
         return product_response
         
     except InvalidProductDataError as e:
@@ -74,7 +83,8 @@ async def create_product(request: ProductCreateRequest) -> ProductResponse:
 )
 async def list_products(
     limit: int = 100,
-    offset: int = 0
+    offset: int = 0,
+    use_case: ListProductsUseCase = Depends(get_list_use_case)
 ) -> List[ProductResponse]:
     """List all products"""
     try:
@@ -83,14 +93,14 @@ async def list_products(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Limit must be between 1 and 1000"
             )
-        
+
         if offset < 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Offset must be non-negative"
             )
-        
-        products = await list_products_use_case.execute(limit=limit, offset=offset)
+
+        products = await use_case.execute(limit=limit, offset=offset)
         return products
         
     except HTTPException:
@@ -114,10 +124,10 @@ async def list_products(
         500: {"description": "Internal server error"}
     }
 )
-async def get_product(product_id: UUID) -> ProductResponse:
+async def get_product(product_id: UUID, use_case: GetProductUseCase = Depends(get_get_use_case)) -> ProductResponse:
     """Get product by ID"""
     try:
-        product_response = await get_product_use_case.execute(product_id)
+        product_response = await use_case.execute(product_id)
         return product_response
         
     except ProductNotFoundError as e:
@@ -145,10 +155,10 @@ async def get_product(product_id: UUID) -> ProductResponse:
         500: {"description": "Internal server error"}
     }
 )
-async def update_product(product_id: UUID, request: ProductUpdateRequest) -> ProductResponse:
+async def update_product(product_id: UUID, request: ProductUpdateRequest, current_user: dict = Depends(get_current_user), use_case: UpdateProductUseCase = Depends(get_update_use_case)) -> ProductResponse:
     """Update a product"""
     try:
-        product_response = await update_product_use_case.execute(product_id, request)
+        product_response = await use_case.execute(product_id, request)
         return product_response
         
     except ProductNotFoundError as e:

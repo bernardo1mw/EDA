@@ -1,4 +1,5 @@
-import { IsString, IsNumber, IsDateString, IsOptional, IsUUID } from 'class-validator';
+import { IsString, IsNumber, IsDateString, IsOptional, IsUUID, IsEnum } from 'class-validator';
+import { PaymentStatus } from '../../../domain/models/payment-status.enum';
 
 export class PaymentEventDto {
   @IsString()
@@ -11,8 +12,8 @@ export class PaymentEventDto {
   @IsNumber()
   amount: number;
 
-  @IsString()
-  status: string;
+  @IsEnum(PaymentStatus)
+  status: PaymentStatus;
 
   @IsDateString()
   processedAt: string;

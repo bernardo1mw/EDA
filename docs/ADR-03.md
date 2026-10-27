@@ -1,5 +1,8 @@
 # ADR-0003: Adoção de Elastic Stack e OpenTelemetry para Observabilidade Unificada
 
+## Status
+Accepted — instrumentação OTel implementada em todos os serviços (Phase 2)
+
 ## Contexto
 
 Com a arquitetura baseada em microsserviços assíncronos, tornou-se essencial adotar uma solução de **observabilidade unificada** para diagnóstico de falhas, análise de performance e rastreamento distribuído de eventos.
@@ -28,3 +31,7 @@ A arquitetura de observabilidade foi definida da seguinte forma:
 - O Elastic Stack exige configuração e ajuste fino para lidar com alta carga de ingestão de logs e métricas.
 - Pode haver custos operacionais elevados, especialmente com volumes altos de dados e retenção longa.
 - A adoção de OpenTelemetry requer padronização da instrumentação de código em todos os serviços.
+
+## Atualizações
+
+- **Phase 2:** A instrumentação OTel foi implementada no serviço Python (orders-api-python) — não apenas como dependência, mas com spans ativos para rotas HTTP e publicação de eventos via Outbox. Os serviços Go já possuíam OTel. O NestJS usa structured logging com correlação por `trace_id`.

@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     postgres_port: int = 5432
     postgres_db: str = "order_process"
     postgres_user: str = "order_user"
-    postgres_password: str = "order_password"
+    postgres_password: str = ""
     
     # Redis
     redis_host: str = "localhost"
@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     rabbitmq_host: str = "localhost"
     rabbitmq_port: int = 5672
     rabbitmq_user: str = "order_user"
-    rabbitmq_password: str = "order_password"
+    rabbitmq_password: str = ""
     rabbitmq_vhost: str = "/"
     
     # OpenTelemetry

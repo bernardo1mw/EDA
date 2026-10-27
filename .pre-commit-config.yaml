@@ -1,0 +1,20 @@
+repos:
+  - repo: local
+    hooks:
+      - id: env-check
+        name: Check for .env files
+        entry: scripts/pre-commit-env-check.sh
+        language: script
+        pass_filenames: false
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: detect-private-key
+      - id: check-merge-conflict
+      - id: trailing-whitespace
+        exclude: '\.md$'
+      - id: end-of-file-fixer
+        exclude: '\.md$'
+      - id: check-yaml
+        args: ['--allow-multiple-documents']
+      - id: check-json

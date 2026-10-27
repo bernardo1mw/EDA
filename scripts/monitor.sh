@@ -13,8 +13,9 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-API_BASE_URL="http://localhost:8080"
-AGGREGATOR_URL="http://localhost:8081"
+ORDERS_API_URL="${ORDERS_API_URL:-http://localhost:8080}"
+PAYMENT_API_URL="${PAYMENT_API_URL:-http://localhost:3001}"
+RABBITMQ_URL="${RABBITMQ_URL:-http://localhost:15672}"
 KIBANA_URL="http://localhost:5601"
 ELASTICSEARCH_URL="http://localhost:9200"
 
@@ -160,8 +161,8 @@ export let options = {
 
 export default function() {
   const order = {
-    customer_id: 'customer-test',
-    product_id: 'product-test',
+    customer_id: '00000000-0000-0000-0000-000000000001',
+    product_id: '00000000-0000-0000-0000-000000000002',
     quantity: 1,
     total_amount: 99.99
   };
@@ -195,7 +196,7 @@ main() {
     # Check service health
     echo -e "${YELLOW}🏥 Service Health Check${NC}"
     echo "-------------------"
-    check_service_health "Orders API" "$API_BASE_URL/health"
+    check_service_health "Orders API" "$ORDERS_API_URL/health"
     check_service_health "Elasticsearch" "$ELASTICSEARCH_URL/_cluster/health"
     check_service_health "Kibana" "$KIBANA_URL/api/status"
     echo ""

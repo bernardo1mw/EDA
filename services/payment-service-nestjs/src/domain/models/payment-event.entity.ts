@@ -1,4 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+import { PaymentStatus } from './payment-status.enum';
 
 @Entity('payment_events')
 export class PaymentEventEntity {
@@ -15,7 +16,7 @@ export class PaymentEventEntity {
   amount: number;
 
   @Column({ name: 'status', type: 'varchar', length: 50 })
-  status: string;
+  status: PaymentStatus;
 
   @Column({ name: 'trace_id', type: 'varchar', length: 255, nullable: true })
   traceId?: string;

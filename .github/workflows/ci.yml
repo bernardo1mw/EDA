@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  python-orders-api:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/orders-api-python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - run: python -m pytest tests/ --cov=app --cov-fail-under=80 -v
+
+  nestjs-payment:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/payment-service-nestjs
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test -- --coverage
+
+  go-services:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [inventory-service, notification-service, outbox-dispatcher]
+    defaults:
+      run:
+        working-directory: services/${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      - run: go vet ./...
+      - run: go test ./... -coverprofile=coverage.out -v
+
+  fe-next:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fe-next
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npx next build
+      - run: npm test
+
+  fe-angular:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fe-angular
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npx ng build
+      - run: npm test -- --ci
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose build

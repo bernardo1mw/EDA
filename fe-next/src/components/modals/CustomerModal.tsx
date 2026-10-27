@@ -37,6 +37,7 @@ export function CustomerModal({
     phone: "",
     address: "",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (customer) {
@@ -54,22 +55,23 @@ export function CustomerModal({
         address: "",
       });
     }
+    setErrors({});
   }, [customer, isOpen]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    // Validação básica
+    const newErrors: Record<string, string> = {};
     if (!formData.name.trim()) {
-      return;
+      newErrors.name = "Nome é obrigatório";
     }
     if (!formData.email.trim()) {
-      return;
+      newErrors.email = "Email é obrigatório";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Email inválido";
     }
-
-    // Validação de email simples
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
@@ -125,12 +127,17 @@ export function CustomerModal({
               id="name"
               type="text"
               value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
+              onChange={(e) => {
+                setFormData({ ...formData, name: e.target.value });
+                setErrors((prev) => ({ ...prev, name: "" }));
+              }}
               placeholder="João Silva"
+              aria-invalid={!!errors.name}
               required
             />
+            {errors.name && (
+              <p className="text-sm text-red-500 mt-1">{errors.name}</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -139,12 +146,17 @@ export function CustomerModal({
               id="email"
               type="email"
               value={formData.email}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
+              onChange={(e) => {
+                setFormData({ ...formData, email: e.target.value });
+                setErrors((prev) => ({ ...prev, email: "" }));
+              }}
               placeholder="joao@example.com"
+              aria-invalid={!!errors.email}
               required
             />
+            {errors.email && (
+              <p className="text-sm text-red-500 mt-1">{errors.email}</p>
+            )}
           </div>
 
           <div className="space-y-2">

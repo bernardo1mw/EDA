@@ -40,7 +40,7 @@ metricbeat.modules:
     - database
     - activity
     - bgwriter
-  hosts: ["postgresql://order_user:order_password@postgres:5432/order_process?sslmode=disable"]
+  hosts: ["postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable"]
   period: 10s
   enabled: true
 
@@ -51,18 +51,12 @@ metricbeat.modules:
   period: 10s
   enabled: true
 
-# - module: rabbitmq
-#   metricsets:
-#     - node
-#     - overview
-#     - queue
-#     - connection
-#     - exchange
-#   hosts: ["rabbitmq:15672"]
-#   username: "order_user"
-#   password: "order_password"
-#   period: 10s
-#   enabled: true
+- module: rabbitmq
+  metricsets: ["node", "queue", "connection"]
+  period: 10s
+  hosts: ["rabbitmq:15672"]
+  username: ${RABBITMQ_USER:order_user}
+  password: ${RABBITMQ_PASSWORD:order_password}
 
 output.elasticsearch:
   hosts: ["elasticsearch:9200"]

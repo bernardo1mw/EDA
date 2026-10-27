@@ -16,7 +16,6 @@ from app.domain.interfaces.repositories import (
 )
 from app.core.database import db_manager
 from app.core.logging import LoggerMixin
-from app.core.profiling import profiler
 
 logger = logging.getLogger(__name__)
 
@@ -207,67 +206,50 @@ class OrderRepository(OrderRepositoryInterface, LoggerMixin):
             RETURNING stock_quantity
         """
         
-        # OPTIMIZATION: Serialize JSON BEFORE transaction to reduce lock time
-        # orjson is 2-3x faster than json.dumps() and reduces transaction overhead
-        with profiler.measure("json_serialization"):
-            event_data_json = orjson.dumps(outbox_event.event_data).decode('utf-8')
-        
+        event_data_json = orjson.dumps(outbox_event.event_data).decode('utf-8')
+
         try:
-            with profiler.measure("db_connection"):
-                async with db_manager.get_connection() as conn:
-                    # Use explicit transaction with isolation level READ COMMITTED (default, fastest)
-                    # This ensures all operations are atomic but with minimal locking overhead
-                    with profiler.measure("db_transaction"):
-                        async with conn.transaction():
-                            # Reserve stock first (if provided) - this ensures stock is reserved before order creation
-                            if product_id and quantity is not None:
-                                with profiler.measure("db_reserve_stock"):
-                                    stock_row = await conn.fetchrow(
-                                        stock_reserve_query,
-                                        product_id,
-                                        quantity
-                                    )
-                                    if stock_row is None:
-                                        # No rows updated means insufficient stock
-                                        from app.domain.models.product import InsufficientStockError
-                                        raise InsufficientStockError(
-                                            f"Insufficient stock. Requested: {quantity}"
-                                        )
-                            
-                            # Insert order
-                            with profiler.measure("db_insert_order"):
-                                order_row = await conn.fetchrow(
-                                    order_insert_query,
-                                    order.id,
-                                    order.customer_id,
-                                    order.product_id,
-                                    order.quantity,
-                                    order.total_amount,
-                                    order.status.value,
-                                    order.created_at,
-                                    order.updated_at
-                                )
-                            
-                            # Insert outbox event immediately after (same transaction)
-                            # JSON already serialized before transaction to minimize lock time
-                            with profiler.measure("db_insert_outbox"):
-                                await conn.execute(
-                                    outbox_insert_query,
-                                    outbox_event.id,
-                                    outbox_event.aggregate_id,
-                                    outbox_event.aggregate_type,
-                                    outbox_event.event_type,
-                                    event_data_json,
-                                    outbox_event.created_at,
-                                    outbox_event.processed_at,
-                                    outbox_event.status,
-                                    outbox_event.retry_count,
-                                    outbox_event.max_retries
-                                )
-                    
-                    # Transaction commits automatically when exiting context
-                    with profiler.measure("db_row_conversion"):
-                        return self._row_to_order(order_row)
+            async with db_manager.get_connection() as conn:
+                async with conn.transaction():
+                    if product_id and quantity is not None:
+                        stock_row = await conn.fetchrow(
+                            stock_reserve_query,
+                            product_id,
+                            quantity
+                        )
+                        if stock_row is None:
+                            from app.domain.models.product import InsufficientStockError
+                            raise InsufficientStockError(
+                                f"Insufficient stock. Requested: {quantity}"
+                            )
+
+                    order_row = await conn.fetchrow(
+                        order_insert_query,
+                        order.id,
+                        order.customer_id,
+                        order.product_id,
+                        order.quantity,
+                        order.total_amount,
+                        order.status.value,
+                        order.created_at,
+                        order.updated_at
+                    )
+
+                    await conn.execute(
+                        outbox_insert_query,
+                        outbox_event.id,
+                        outbox_event.aggregate_id,
+                        outbox_event.aggregate_type,
+                        outbox_event.event_type,
+                        event_data_json,
+                        outbox_event.created_at,
+                        outbox_event.processed_at,
+                        outbox_event.status,
+                        outbox_event.retry_count,
+                        outbox_event.max_retries
+                    )
+
+                return self._row_to_order(order_row)
                     
         except asyncpg.exceptions.IntegrityConstraintViolationError as e:
             self.log_error("Order creation with outbox event failed - integrity error", error=str(e))

@@ -1,5 +1,6 @@
 # Interface Layer - API Routes
 from fastapi import APIRouter, HTTPException, Depends, status
+from app.core.auth import get_current_user
 from fastapi.responses import JSONResponse
 from typing import List
 from uuid import UUID
@@ -49,7 +50,8 @@ order_controller = OrderController()
 async def create_order(
     request: OrderCreateRequest,
     trace_id: str = None,
-    span_id: str = None
+    span_id: str = None,
+    current_user: dict = Depends(get_current_user)
 ) -> OrderResponse:
     """Create a new order"""
     try:

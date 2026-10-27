@@ -67,7 +67,7 @@ export const OrderCard = memo(function OrderCard({
   }, []);
 
   return (
-    <div className="group relative bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700/50 p-6 hover:shadow-xl hover:shadow-blue-500/10 dark:hover:shadow-blue-500/20 transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 dark:hover:border-blue-700/50 overflow-hidden">
+    <div role="article" className="group relative bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700/50 p-6 hover:shadow-xl hover:shadow-blue-500/10 dark:hover:shadow-blue-500/20 transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 dark:hover:border-blue-700/50 overflow-hidden">
       {/* Gradient overlay on hover */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-50/0 via-blue-50/0 to-blue-50/0 group-hover:from-blue-50/50 group-hover:via-transparent group-hover:to-transparent dark:group-hover:from-blue-950/20 transition-all duration-300 pointer-events-none" />
       
@@ -89,6 +89,7 @@ export const OrderCard = memo(function OrderCard({
             </div>
           </div>
           <span
+            aria-label={`Status: ${order.status}`}
             className={cn(
               "px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm whitespace-nowrap ml-2",
               statusColors[order.status]

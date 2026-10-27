@@ -13,7 +13,7 @@ export const orderKeys = {
 };
 
 // Hook para listar todos os pedidos
-export function useOrders(limit: number = 1000, offset: number = 0) {
+export function useOrders(limit: number = 20, offset: number = 0) {
   return useQuery({
     queryKey: [...orderKeys.lists(), limit, offset],
     queryFn: () => apiClient.listAllOrders(limit, offset),

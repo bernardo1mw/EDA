@@ -6,7 +6,6 @@ import logging
 from app.domain.models.order import Order, OrderCreateRequest, OrderResponse, OrderNotFoundError, InvalidOrderDataError, OutboxEvent
 from app.domain.interfaces.repositories import OrderRepositoryInterface, ProductRepositoryInterface
 from app.core.logging import LoggerMixin
-from app.core.profiling import profiler
 
 logger = logging.getLogger(__name__)
 
@@ -30,67 +29,42 @@ class CreateOrderUseCase(LoggerMixin):
         """Execute order creation use case with Transactional Outbox Pattern"""
         
         try:
-            # Validate business rules
-            with profiler.measure("validation"):
-                await self._validate_order_data(request)
-            
-            # Check product exists (stock will be reserved atomically in the transaction)
-            with profiler.measure("product_check"):
-                product = await self.product_repository.get_by_id(request.product_id)
-                if not product:
-                    raise InvalidOrderDataError(f"Product not found: {request.product_id}")
-                
-                # Note: Stock availability is checked and reserved atomically in create_with_outbox_event
-                # This prevents race conditions where stock might be depleted between check and reservation
-            
-            # Create domain model
-            with profiler.measure("domain_creation"):
-                order = Order.create_new(
-                    customer_id=request.customer_id,
-                    product_id=request.product_id,
-                    quantity=request.quantity,
-                    total_amount=request.total_amount
-                )
-            
-            # Create outbox event for order.created
-            with profiler.measure("outbox_creation"):
-                outbox_event = OutboxEvent.create_order_created_event(
-                    order,
-                    trace_id=trace_id,
-                    span_id=span_id
-                )
-            
-            # Save order, reserve stock, and outbox event in a single transaction (Transactional Outbox Pattern)
-            # This ensures atomicity: either all are saved, or none is
-            # Stock is reserved in the same transaction to prevent race conditions
-            with profiler.measure("database_transaction"):
-                saved_order = await self.order_repository.create_with_outbox_event(
-                    order, 
-                    outbox_event,
-                    product_id=request.product_id,
-                    quantity=request.quantity
-                )
-            
-            # OPTIMIZATION: Removed logging from hot path to reduce latency
-            # Logging is expensive (json.dumps, string formatting) and adds ~5-15ms per request
-            # In production, use structured logging asynchronously or via metrics
-            
-            # Note: Event will be published asynchronously by outbox-dispatcher service
-            # which reads from outbox_events table and publishes to RabbitMQ
-            
-            # OPTIMIZATION: Direct instantiation instead of from_orm to avoid Pydantic overhead
-            with profiler.measure("response_creation"):
-                response = OrderResponse(
-                    id=saved_order.id,
-                    customer_id=saved_order.customer_id,
-                    product_id=saved_order.product_id,
-                    quantity=saved_order.quantity,
-                    total_amount=saved_order.total_amount,
-                    status=saved_order.status,
-                    created_at=saved_order.created_at,
-                    updated_at=saved_order.updated_at
-                )
-            return response
+            await self._validate_order_data(request)
+
+            product = await self.product_repository.get_by_id(request.product_id)
+            if not product:
+                raise InvalidOrderDataError(f"Product not found: {request.product_id}")
+
+            order = Order.create_new(
+                customer_id=request.customer_id,
+                product_id=request.product_id,
+                quantity=request.quantity,
+                total_amount=request.total_amount
+            )
+
+            outbox_event = OutboxEvent.create_order_created_event(
+                order,
+                trace_id=trace_id,
+                span_id=span_id
+            )
+
+            saved_order = await self.order_repository.create_with_outbox_event(
+                order,
+                outbox_event,
+                product_id=request.product_id,
+                quantity=request.quantity
+            )
+
+            return OrderResponse(
+                id=saved_order.id,
+                customer_id=saved_order.customer_id,
+                product_id=saved_order.product_id,
+                quantity=saved_order.quantity,
+                total_amount=saved_order.total_amount,
+                status=saved_order.status,
+                created_at=saved_order.created_at,
+                updated_at=saved_order.updated_at
+            )
             
         except InvalidOrderDataError as e:
             self.log_error(
