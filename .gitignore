@@ -443,3 +443,4 @@ config/*.local.*
 test-results/
 tests/test-results/
 
+.vitest/
