@@ -187,24 +187,27 @@ class TestOrderUseCases:
     @pytest.mark.asyncio
     async def test_create_order_use_case_success(self):
         """Test successful order creation use case"""
-        mock_repository = AsyncMock()
-        mock_event_publisher = AsyncMock()
+        from app.domain.models.order import Order
+        from unittest.mock import MagicMock
 
-        mock_order = OrderResponse(
-            id=uuid4(),
-            customer_id=CUSTOMER_UUID,
-            product_id=PRODUCT_UUID,
-            quantity=2,
-            total_amount=99.98,
-            status=OrderStatus.PENDING,
-            created_at="2024-01-01T00:00:00Z",
-            updated_at="2024-01-01T00:00:00Z"
-        )
+        mock_order_repo = AsyncMock()
+        mock_product_repo = AsyncMock()
 
-        mock_repository.create.return_value = mock_order
-        mock_event_publisher.publish_order_created.return_value = True
+        order_id = uuid4()
+        saved_order = MagicMock()
+        saved_order.id = order_id
+        saved_order.customer_id = CUSTOMER_UUID
+        saved_order.product_id = PRODUCT_UUID
+        saved_order.quantity = 2
+        saved_order.total_amount = 99.98
+        saved_order.status = OrderStatus.PENDING
+        saved_order.created_at = "2024-01-01T00:00:00Z"
+        saved_order.updated_at = "2024-01-01T00:00:00Z"
 
-        use_case = CreateOrderUseCase(mock_repository, mock_event_publisher)
+        mock_product_repo.get_by_id.return_value = MagicMock()
+        mock_order_repo.create_with_outbox_event.return_value = saved_order
+
+        use_case = CreateOrderUseCase(mock_order_repo, mock_product_repo)
 
         request = OrderCreateRequest(
             customer_id=CUSTOMER_UUID,
@@ -221,8 +224,7 @@ class TestOrderUseCases:
         assert result.total_amount == 99.98
         assert result.status == OrderStatus.PENDING
 
-        mock_repository.create.assert_called_once()
-        mock_event_publisher.publish_order_created.assert_called_once()
+        mock_order_repo.create_with_outbox_event.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_create_order_use_case_invalid_data(self):

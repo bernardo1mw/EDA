@@ -24,7 +24,7 @@ jobs:
         dir: [fe-next, fe-angular, services/payment-service-nestjs]
     steps:
       - uses: actions/checkout@v4
-      - run: cd ${{ matrix.dir }} && npm ci --ignore-scripts && npm audit --audit-level=critical
+      - run: cd ${{ matrix.dir }} && npm ci --ignore-scripts --legacy-peer-deps && npm audit --audit-level=critical
 
   pip-audit:
     runs-on: ubuntu-latest
