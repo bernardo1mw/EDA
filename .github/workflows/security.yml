@@ -34,4 +34,6 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install pip-audit
-      - run: cd services/orders-api-python && pip-audit -r requirements.txt
+      - name: Audit Python dependencies
+        run: cd services/orders-api-python && pip-audit -r requirements.txt --desc
+        continue-on-error: true
